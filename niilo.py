@@ -74,7 +74,6 @@ def daily():
 		videoid = video['videoId']
 		paivan_video = ("https://www.youtube.com/watch?v=" + videoid)
 		return paivan_video
-		break
 
 @tasks.loop(seconds=31)
 async def daily_loop():
