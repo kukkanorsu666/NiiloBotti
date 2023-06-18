@@ -1,8 +1,9 @@
 import nextcord, os, random, scrapetube, datetime, time
 from asyncio import sleep
 from nextcord import FFmpegPCMAudio
-from nextcord.ext import tasks, commands
 from nextcord import Interaction
+from nextcord.ext import tasks, commands
+
 
 intents = nextcord.Intents.all()
 intents.members = True
@@ -17,6 +18,10 @@ async def on_ready():
 
 SERVER_ID = SERVER ID HERE
 CHANNEL_ID = CHANNEL ID HERE
+
+script_dir = os.path.dirname(__file__)
+relative_path_wav = "Sound/"
+voice_path_wav = os.path.join(script_dir, relative_path_wav)
 
 
 #RANDOM LUIKAUS
@@ -41,17 +46,17 @@ async def testcommand(interaction: Interaction):
 
 #RANDOM ÄÄNIKLIPPI
 def random_voice(voice_):
-	random_voice = open('voice.txt', encoding='utf-8').read().splitlines()
-	return random.choice(random_voice)
-	
+	random_voice = random_file=random.choice(os.listdir(voice_path_wav))
+	print("playing -- " + random_voice)
+	return random_voice
+
 #CONNECT VOICE
 @client.command(pass_context = True)
 async def n(ctx):
 	if(ctx.author.voice):
 		channel = ctx.message.author.voice.channel
 		voice = await channel.connect()
-		chosen_voice = random_voice(random_voice)
-		print(chosen_voice)
+		chosen_voice = voice_path_wav + random_voice(random_voice)
 		source = FFmpegPCMAudio(chosen_voice)
 		player = voice.play(source)
 		while voice.is_playing():
@@ -77,14 +82,12 @@ def daily():
 
 @tasks.loop(minutes=1)
 async def daily_loop():
-	x = datetime.time(16, 0)
+	x = datetime.time(16, 00)
 	schedule_time_hour = x.hour
 	schedule_time_minute = x.minute
-
-
 	if schedule_time_hour  == datetime.datetime.now().hour and schedule_time_minute == datetime.datetime.now().minute:
 		channel = client.get_channel(CHANNEL ID HERE)
 		await channel.send(daily())
 
 daily_loop.start()
-client.run(PRIVATE KEY HERE)
+client.run("BOT_TOKEN")
