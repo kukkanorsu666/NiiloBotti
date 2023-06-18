@@ -86,6 +86,5 @@ async def daily_loop():
 		channel = client.get_channel(CHANNEL ID HERE)
 		await channel.send(daily())
 
-
-client.run(PRIVATE KEY HERE)
 daily_loop.start()
+client.run(PRIVATE KEY HERE)
