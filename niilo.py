@@ -75,7 +75,7 @@ def daily():
 		paivan_video = ("https://www.youtube.com/watch?v=" + videoid)
 		return paivan_video
 
-@tasks.loop(seconds=31)
+@tasks.loop(minutes=1)
 async def daily_loop():
 	x = datetime.time(16, 0)
 	schedule_time_hour = x.hour
