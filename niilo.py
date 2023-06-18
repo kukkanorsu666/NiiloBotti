@@ -57,7 +57,6 @@ def random_voice():
 #CONNECT VOICE
 @client.command(pass_context = True)
 async def n(ctx):
-	print("moi")
 	if(ctx.author.voice):
 		channel = ctx.message.author.voice.channel
 		voice = await channel.connect()
