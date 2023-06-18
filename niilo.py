@@ -46,7 +46,7 @@ async def testcommand(interaction: Interaction):
 
 #RANDOM ÄÄNIKLIPPI
 def random_voice(voice_):
-	random_voice = random_file=random.choice(os.listdir(voice_path_wav))
+	random_voice = random.choice(os.listdir(voice_path_wav))
 	print("playing -- " + random_voice)
 	return random_voice
 
