@@ -83,7 +83,7 @@ async def daily_loop():
 
 
 	if schedule_time_hour  == datetime.datetime.now().hour and schedule_time_minute == datetime.datetime.now().minute:
-		channel = client.get_channel(1048767467633254512)
+		channel = client.get_channel(CHANNEL ID HERE)
 		await channel.send(daily())
 
 
