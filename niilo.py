@@ -47,9 +47,6 @@ async def videocom(interaction: Interaction):
 
 #RANDOM ÄÄNIKLIPPI
 def random_voice():
-	script_dir = os.path.dirname(__file__)
-	relative_path_wav = "Sound/"
-	voice_path_wav = os.path.join(script_dir, relative_path_wav)
 	random_voice = random.choice(os.listdir(voice_path_wav))
 	print("playing -- " + random_voice)
 	return random_voice
