@@ -86,7 +86,7 @@ async def live_check():
 
 	if "hqdefault_live.jpg" in ENCODED.decode():
 		print("Channel live!")
-		channel1 = client.get_channel(CHANNEL ID HERE)
+		channel1 = client.get_channel(CHANNEL_ID)
 		await channel1.send("Rupeen tästä pelailemaan\nhttps://www.youtube.com/@niilo22games/live")
 		await sleep(36000)
 
@@ -110,7 +110,7 @@ async def daily_loop():
 
 
 	if schedule_time_hour  == datetime.datetime.now().hour and schedule_time_minute == datetime.datetime.now().minute:
-		channel = client.get_channel(CHANNEL ID HERE)
+		channel = client.get_channel(CHANNEL_ID)
 		await channel.send(daily())
 
 daily_loop.start()
