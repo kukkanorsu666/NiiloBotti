@@ -73,6 +73,26 @@ async def leave(ctx):
 	if (ctx.voice_client):
 		await ctx.guild.voice_client.disconnect()
 
+#LIVE CHECK
+@tasks.loop(minutes=2)
+async def live_check():
+	await client.wait_until_ready()
+	channel_url = "https://www.youtube.com/@niilo22games"
+	print("Checking live status...")
+
+	#SOCS 13 kk uus tarvittaessa
+	content = requests.get(channel_url, cookies={"CONSENT":"PENDING+696969", "SOCS":"CAESEwgDEgk1NjgTNjQzNDMaAnUpIAEaBgiAvsioFu"}).text
+	ENCODED = str(content).encode("ascii", "ignore")
+
+	if "hqdefault_live.jpg" in ENCODED.decode():
+		print("Channel live!")
+		channel1 = client.get_channel(CHANNEL ID HERE)
+		await channel1.send("Rupeen tästä pelailemaan\nhttps://www.youtube.com/@niilo22games/live")
+		await sleep(36000)
+
+	else:
+		print("Not live :(")
+
 
 #PÄIVÄN VIDEO
 def daily():
@@ -94,4 +114,5 @@ async def daily_loop():
 		await channel.send(daily())
 
 daily_loop.start()
+live_check.start()
 client.run("BOT_TOKEN")
