@@ -1,4 +1,4 @@
-import nextcord, os, random, scrapetube, datetime, time
+import nextcord, os, random, scrapetube, datetime, time, requests
 from asyncio import sleep
 from nextcord import FFmpegPCMAudio
 from nextcord.ext import tasks, commands
