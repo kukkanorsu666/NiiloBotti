@@ -45,7 +45,7 @@ def video():
 
 #LUIKAUSKOMENTO
 @client.slash_command(name = "luikaus", description = "Ei siitä sen enempää", guild_ids=[SERVER_ID])
-async def echo_number(
+async def luikauscom(
     interaction: nextcord.Interaction,
     number: Optional[int] = SlashOption(required=False)):
 
