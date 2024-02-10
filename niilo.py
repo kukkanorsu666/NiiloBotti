@@ -3,6 +3,8 @@ from asyncio import sleep
 from nextcord import FFmpegPCMAudio
 from nextcord.ext import tasks, commands
 from nextcord import Interaction
+from nextcord import SlashOption
+from typing import Optional
 
 intents = nextcord.Intents.all()
 intents.members = True
@@ -30,6 +32,12 @@ def luikaus():
     random_luikaus = open("luikaukset.txt", encoding='utf-8').read().splitlines()
     return random.choice(random_luikaus)
 
+#EI NIIN RANDOM LUIKAUS
+def valittuluikaus(x):
+	with open("luikaukset.txt", encoding='utf-8') as onh:
+		arr = onh.readlines()
+		return arr[x]
+
 #RANDOM VIDEO
 def video():
     random_video = open('videot.txt', encoding='utf-8').read().splitlines()
@@ -37,8 +45,15 @@ def video():
 
 #LUIKAUSKOMENTO
 @client.slash_command(name = "luikaus", description = "Ei siitä sen enempää", guild_ids=[SERVER_ID])
-async def luikauscom(interaction: Interaction):
+async def echo_number(
+    interaction: nextcord.Interaction,
+    number: Optional[int] = SlashOption(required=False)):
+
+    if number is None or number > 195 or number < 0:
 	await interaction.response.send_message(luikaus())
+
+    else:
+	await interaction.response.send_message(valittuluikaus(number))
 
 #RANDOM VIDEOKOMENTO
 @client.slash_command(name = "video", description = "Tästä videoustia", guild_ids=[SERVER_ID])
