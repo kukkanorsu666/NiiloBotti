@@ -1,10 +1,12 @@
-import nextcord, os, random, scrapetube, datetime, time, requests
+import nextcord, os, random, scrapetube, datetime, time, requests, openai, asyncio
 from asyncio import sleep
 from nextcord import FFmpegPCMAudio
 from nextcord.ext import tasks, commands
 from nextcord import Interaction
 from nextcord import SlashOption
 from typing import Optional
+from pytube import extract
+from youtube_transcript_api import YouTubeTranscriptApi
 
 intents = nextcord.Intents.all()
 intents.members = True
@@ -16,21 +18,23 @@ async def on_ready():
 	print("Valmis")
 	await daily_loop()
 
+BOT_TOKEN = BOT_TOKEN
+SERVER_ID = SERVER_ID
+CHANNEL_ID = CHANNEL_ID
 
-SERVER_ID = SERVER ID HERE
-CHANNEL_ID = CHANNEL ID HERE
-
+openai.api_key = OPENAI_API_KEY
+openai.base_url = OPENAI_BASE_URL
 
 script_dir = os.path.dirname(__file__)
 relative_path_wav = "Sound/"
 voice_path_wav = os.path.join(script_dir, relative_path_wav)
 
 
-
 #RANDOM LUIKAUS
 def luikaus():
-    random_luikaus = open("luikaukset.txt", encoding='utf-8').read().splitlines()
-    return random.choice(random_luikaus)
+	random_luikaus = open("luikaukset.txt", encoding='utf-8').read().splitlines()
+	return random.choice(random_luikaus)
+
 
 #EI NIIN RANDOM LUIKAUS
 def valittuluikaus(x):
@@ -38,33 +42,38 @@ def valittuluikaus(x):
 		arr = onh.readlines()
 		return arr[x]
 
+
 #RANDOM VIDEO
 def video():
-    random_video = open('videot.txt', encoding='utf-8').read().splitlines()
-    return random.choice(random_video)
+	random_video = open('videot.txt', encoding='utf-8').read().splitlines()
+	return random.choice(random_video)
+
 
 #LUIKAUSKOMENTO
 @client.slash_command(name = "luikaus", description = "Ei siitä sen enempää", guild_ids=[SERVER_ID])
 async def luikauscom(
-    interaction: nextcord.Interaction,
-    number: Optional[int] = SlashOption(required=False)):
+	interaction: nextcord.Interaction,
+	numero: Optional[int] = SlashOption(required=False)):
 
-    if number is None or number > 195 or number < 0:
-	await interaction.response.send_message(luikaus())
+	if numero is None or numero > 195 or numero < 0:
+		await interaction.response.send_message(luikaus())
 
-    else:
-	await interaction.response.send_message(valittuluikaus(number))
+	else:
+		await interaction.response.send_message(valittuluikaus(numero))
+
 
 #RANDOM VIDEOKOMENTO
 @client.slash_command(name = "video", description = "Tästä videoustia", guild_ids=[SERVER_ID])
 async def videocom(interaction: Interaction):
 	await interaction.response.send_message((video()))
 
+
 #RANDOM ÄÄNIKLIPPI
 def random_voice():
 	random_voice = random.choice(os.listdir(voice_path_wav))
 	print("playing -- " + random_voice)
 	return random_voice
+
 
 #CONNECT VOICE
 @client.command(pass_context = True)
@@ -96,10 +105,10 @@ async def live_check():
 	print("Checking live status...")
 
 	#SOCS 13 kk uus tarvittaessa
-	content = requests.get(channel_url, cookies={"CONSENT":"PENDING+696969", "SOCS":"CAESEwgDEgk1NjgTNjQzNDMaAnUpIAEaBgiAvsioFu"}).text
+	content = requests.get(channel_url, cookies={"CONSENT":"PENDING+696969", "SOCS":"CAESEwgDEgk2OTA4MDQ2NDQaAmVuIAEaBgiAkYu5Bg"}).text
 	ENCODED = str(content).encode("ascii", "ignore")
 
-	if "hqdefault_live.jpg" in ENCODED.decode():
+	if "katsojaa" in ENCODED.decode():
 		print("Channel live!")
 		channel1 = client.get_channel(CHANNEL_ID)
 		await channel1.send("Rupeen tästä pelailemaan\nhttps://www.youtube.com/@niilo22games/live")
@@ -117,17 +126,44 @@ def daily():
 		paivan_video = ("https://www.youtube.com/watch?v=" + videoid)
 		return paivan_video
 
+
+def ai_summary():
+	url = daily()
+	video_id = extract.video_id(url)
+
+	transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=['fi'])
+	text = ""
+	for x in transcript:
+		text = text + " " + x["text"]
+
+	text = text.replace('[Musiikkia]', '')
+	text = text.replace('\n', '')
+
+
+	completion = openai.chat.completions.create(
+		model="gpt-3.5-turbo",
+		messages=[
+			{"role": "user", "content": f"Vastauksessa tulee olla alle 1800 kirjainta. Videossa puhuu Niilo. Voitko listata lyhyesti suomeksi tästä videosta oleelliset asiat?: {text}"}
+		],
+	)
+
+	print(completion.choices[0].message.content)
+
+	ai_summary = completion.choices[0].message.content
+
+	return ai_summary
+
+
 @tasks.loop(minutes=1)
 async def daily_loop():
-	x = datetime.time(16, 00)
+	x = datetime.time(16, 0)
 	schedule_time_hour = x.hour
 	schedule_time_minute = x.minute
 
-
 	if schedule_time_hour  == datetime.datetime.now().hour and schedule_time_minute == datetime.datetime.now().minute:
 		channel = client.get_channel(CHANNEL_ID)
-		await channel.send(daily())
+		await channel.send("_" + ai_summary()+ "_" + "\n" + daily())
 
 daily_loop.start()
 live_check.start()
-client.run("BOT_TOKEN")
+client.run(BOT_TOKEN)
