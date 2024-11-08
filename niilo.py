@@ -1,4 +1,4 @@
-import nextcord, os, random, scrapetube, datetime, time, requests, openai, asyncio, logging
+import nextcord, os, random, scrapetube, datetime, time, requests, openai, asyncio
 from asyncio import sleep
 from nextcord import FFmpegPCMAudio
 from nextcord.ext import tasks, commands
@@ -33,8 +33,7 @@ channel_url = "https://www.youtube.com/@niilo22games/"
 content = requests.get(channel_url, cookies={"CONSENT":"PENDING+696969", "SOCS":"CAESEwgDEgk2OTA4MDQ2NDQaAmVuIAEaBgiAkYu5Bg"}).text
 ENCODED = str(content).encode("ascii", "ignore")
 
-logging.basicConfig(filename='errorlog.log', level=logging.DEBUG, format='%(asctime)s %(levelname)s %(name)s %(message)s')
-logger=logging.getLogger(__name__)
+
 #RANDOM LUIKAUS
 def luikaus():
 	random_luikaus = open("luikaukset.txt", encoding='utf-8').read().splitlines()
@@ -174,10 +173,8 @@ async def daily_loop():
 		channel = client.get_channel(CHANNEL_ID)
 		try:
 			await channel.send("_" + ai_summary()+ "_" + "\n" + daily())
-		except openai.OpenAIError as err:
+		except:
 			await channel.send("_" + "Napsahti että pärähti! (joku meni pieleen)" + "_" + "\n" + daily())
-			logger.error(err)
-		
 
 daily_loop.start()
 live_check.start()
