@@ -1,4 +1,4 @@
-import nextcord, os, random, scrapetube, datetime, time, requests, openai, asyncio
+import nextcord, os, random, scrapetube, datetime, time, requests, openai, asyncio, logging
 from asyncio import sleep
 from nextcord import FFmpegPCMAudio
 from nextcord.ext import tasks, commands
@@ -7,6 +7,7 @@ from nextcord import SlashOption
 from typing import Optional
 from pytube import extract
 from youtube_transcript_api import YouTubeTranscriptApi
+from bs4 import BeautifulSoup
 
 intents = nextcord.Intents.all()
 intents.members = True
@@ -14,22 +15,26 @@ client = commands.Bot(command_prefix="!", intents=intents)
 
 @client.event
 async def on_ready():
-	await client.change_presence(activity=nextcord.Activity(type=nextcord.ActivityType.watching, name="Bengalin tiikeri"))
 	print("Valmis")
 	await daily_loop()
 
-BOT_TOKEN = BOT_TOKEN
-SERVER_ID = SERVER_ID
-CHANNEL_ID = CHANNEL_ID
+BOT_TOKEN = "BOT TOKEN"
+SERVER_ID = "SERVER ID"
+CHANNEL_ID = "CHANNEL ID"
 
-openai.api_key = OPENAI_API_KEY
-openai.base_url = OPENAI_BASE_URL
+openai.api_key = 'API_KEY'
 
 script_dir = os.path.dirname(__file__)
 relative_path_wav = "Sound/"
 voice_path_wav = os.path.join(script_dir, relative_path_wav)
 
+#SOCS 13 kk uus tarvittaessa
+channel_url = "https://www.youtube.com/@niilo22games/"
+content = requests.get(channel_url, cookies={"CONSENT":"PENDING+696969", "SOCS":"CAESEwgDEgk2OTA4MDQ2NDQaAmVuIAEaBgiAkYu5Bg"}).text
+ENCODED = str(content).encode("ascii", "ignore")
 
+logging.basicConfig(filename='errorlog.log', level=logging.DEBUG, format='%(asctime)s %(levelname)s %(name)s %(message)s')
+logger=logging.getLogger(__name__)
 #RANDOM LUIKAUS
 def luikaus():
 	random_luikaus = open("luikaukset.txt", encoding='utf-8').read().splitlines()
@@ -97,25 +102,31 @@ async def leave(ctx):
 	if (ctx.voice_client):
 		await ctx.guild.voice_client.disconnect()
 
+
 #LIVE CHECK
 @tasks.loop(minutes=2)
 async def live_check():
 	await client.wait_until_ready()
-	channel_url = "https://www.youtube.com/@niilo22games"
-	print("Checking live status...")
-
-	#SOCS 13 kk uus tarvittaessa
-	content = requests.get(channel_url, cookies={"CONSENT":"PENDING+696969", "SOCS":"CAESEwgDEgk2OTA4MDQ2NDQaAmVuIAEaBgiAkYu5Bg"}).text
-	ENCODED = str(content).encode("ascii", "ignore")
 
 	if "katsojaa" in ENCODED.decode():
-		print("Channel live!")
 		channel1 = client.get_channel(CHANNEL_ID)
 		await channel1.send("Rupeen tästä pelailemaan\nhttps://www.youtube.com/@niilo22games/live")
 		await sleep(36000)
 
+
+@tasks.loop(minutes=2)
+async def live_status():
+	await client.wait_until_ready()
+
+	if "katsojaa" in ENCODED.decode():
+		r = requests.get("https://www.youtube.com/@niilo22games/live")
+		s = BeautifulSoup(r.text)
+		link = s.find_all(name="title")[0]
+		title = link.text
+		title = title.replace(" - YouTube","")
+		await client.change_presence(activity=nextcord.CustomActivity(name=f"Striimaa {title}"))
 	else:
-		print("Not live :(")
+		await client.change_presence(activity=nextcord.CustomActivity(name="Hyvää joulun odotusta & lumen"))
 
 
 #PÄIVÄN VIDEO
@@ -139,18 +150,17 @@ def ai_summary():
 	text = text.replace('[Musiikkia]', '')
 	text = text.replace('\n', '')
 
-
 	completion = openai.chat.completions.create(
-		model="gpt-3.5-turbo",
+		model="gpt-4o",
 		messages=[
-			{"role": "user", "content": f"Vastauksessa tulee olla alle 1800 kirjainta. Videossa puhuu Niilo. Voitko listata lyhyesti suomeksi tästä videosta oleelliset asiat?: {text}"}
+			{"role": "user", "content": f"Vastauksessa tulee olla alle 1500 kirjainta. Videossa puhuu Niilo. Voitko listata lyhyesti suomeksi tästä videosta oleelliset asiat?: {text}"}
 		],
 	)
 
 	print(completion.choices[0].message.content)
 
 	ai_summary = completion.choices[0].message.content
-
+	
 	return ai_summary
 
 
@@ -162,8 +172,14 @@ async def daily_loop():
 
 	if schedule_time_hour  == datetime.datetime.now().hour and schedule_time_minute == datetime.datetime.now().minute:
 		channel = client.get_channel(CHANNEL_ID)
-		await channel.send("_" + ai_summary()+ "_" + "\n" + daily())
+		try:
+			await channel.send("_" + ai_summary()+ "_" + "\n" + daily())
+		except openai.OpenAIError as err:
+			await channel.send("_" + "Napsahti että pärähti! (joku meni pieleen)" + "_" + "\n" + daily())
+			logger.error(err)
+		
 
 daily_loop.start()
 live_check.start()
+live_status.start()
 client.run(BOT_TOKEN)
