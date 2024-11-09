@@ -28,11 +28,6 @@ script_dir = os.path.dirname(__file__)
 relative_path_wav = "Sound/"
 voice_path_wav = os.path.join(script_dir, relative_path_wav)
 
-#SOCS 13 kk uus tarvittaessa
-channel_url = "https://www.youtube.com/@niilo22games/"
-content = requests.get(channel_url, cookies={"CONSENT":"PENDING+696969", "SOCS":"CAESEwgDEgk2OTA4MDQ2NDQaAmVuIAEaBgiAkYu5Bg"}).text
-ENCODED = str(content).encode("ascii", "ignore")
-
 
 #RANDOM LUIKAUS
 def luikaus():
@@ -107,6 +102,11 @@ async def leave(ctx):
 async def live_check():
 	await client.wait_until_ready()
 
+	#SOCS 13 kk uus tarvittaessa
+	channel_url = "https://www.youtube.com/@niilo22games/"
+	content = requests.get(channel_url, cookies={"CONSENT":"PENDING+696969", "SOCS":"CAESEwgDEgk2OTA4MDQ2NDQaAmVuIAEaBgiAkYu5Bg"}).text
+	ENCODED = str(content).encode("ascii", "ignore")
+
 	if "katsojaa" in ENCODED.decode():
 		channel1 = client.get_channel(CHANNEL_ID)
 		await channel1.send("Rupeen tästä pelailemaan\nhttps://www.youtube.com/@niilo22games/live")
@@ -116,6 +116,10 @@ async def live_check():
 @tasks.loop(minutes=2)
 async def live_status():
 	await client.wait_until_ready()
+
+	channel_url = "https://www.youtube.com/@niilo22games/"
+	content = requests.get(channel_url, cookies={"CONSENT":"PENDING+696969", "SOCS":"CAESEwgDEgk2OTA4MDQ2NDQaAmVuIAEaBgiAkYu5Bg"}).text
+	ENCODED = str(content).encode("ascii", "ignore")
 
 	if "katsojaa" in ENCODED.decode():
 		r = requests.get("https://www.youtube.com/@niilo22games/live")
