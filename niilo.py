@@ -15,14 +15,15 @@ client = commands.Bot(command_prefix="!", intents=intents)
 
 @client.event
 async def on_ready():
-	print("Valmis")
 	await daily_loop()
+	await luikaus_loop()
+	print("Valmis")
 
 BOT_TOKEN = "BOT TOKEN"
 SERVER_ID = "SERVER ID"
 CHANNEL_ID = "CHANNEL ID"
 
-openai.api_key = 'API_KEY'
+openai.api_key = "API_KEY"
 
 script_dir = os.path.dirname(__file__)
 relative_path_wav = "Sound/"
@@ -129,7 +130,7 @@ async def live_status():
 		title = title.replace(" - YouTube","")
 		await client.change_presence(activity=nextcord.CustomActivity(name=f"Striimaa {title}"))
 	else:
-		await client.change_presence(activity=nextcord.CustomActivity(name="Hyvää joulun odotusta & lumen"))
+		await client.change_presence(activity=nextcord.CustomActivity(name="asia on nyt tähän"))
 
 
 #PÄIVÄN VIDEO
@@ -156,7 +157,7 @@ def ai_summary():
 	completion = openai.chat.completions.create(
 		model="gpt-4o",
 		messages=[
-			{"role": "user", "content": f"Vastauksessa tulee olla alle 1500 kirjainta. Videossa puhuu Niilo. Voitko listata lyhyesti suomeksi tästä videosta oleelliset asiat?: {text}"}
+			{"role": "user", "content": f"Vastauksessa tulee olla alle 300 kirjainta. Videossa puhuu Niilo. Voitko listata lyhyesti suomeksi tästä videosta oleelliset asiat?: {text}"}
 		],
 	)
 
@@ -167,20 +168,38 @@ def ai_summary():
 	return ai_summary
 
 
+def time_luikaus():
+	h = random.randint(8, 21)
+	m = random.randint(0, 59)
+	luikaus_time = datetime.time(h, m)
+	return luikaus_time
+
+
+@tasks.loop(minutes=1)
+async def luikaus_loop():
+	schedule_time_hour = time_luikaus().hour
+	schedule_time_minute = time_luikaus().minute
+
+	if schedule_time_hour  == datetime.datetime.now().hour and schedule_time_minute == datetime.datetime.now().minute:
+		channel = client.get_channel(CHANNEL_ID)
+		await channel.send(luikaus())
+
+
 @tasks.loop(minutes=1)
 async def daily_loop():
-	x = datetime.time(16, 0)
+	x = datetime.time(16, 00)
 	schedule_time_hour = x.hour
 	schedule_time_minute = x.minute
 
 	if schedule_time_hour  == datetime.datetime.now().hour and schedule_time_minute == datetime.datetime.now().minute:
 		channel = client.get_channel(CHANNEL_ID)
 		try:
-			await channel.send("_" + ai_summary()+ "_" + "\n" + daily())
+			await channel.send("_" + ai_summary() + "_" + "\n" + daily())
 		except:
 			await channel.send("_" + "Napsahti että pärähti! (joku meni pieleen)" + "_" + "\n" + daily())
 
 daily_loop.start()
 live_check.start()
+luikaus_loop.start()
 live_status.start()
 client.run(BOT_TOKEN)
