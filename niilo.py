@@ -175,7 +175,7 @@ def time_luikaus():
 	return luikaus_time
 
 
-@tasks.loop(minutes=1)
+@tasks.loop(hours=24)
 async def luikaus_loop():
 	schedule_time_hour = time_luikaus().hour
 	schedule_time_minute = time_luikaus().minute
