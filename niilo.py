@@ -23,7 +23,7 @@ BOT_TOKEN = "BOT TOKEN"
 SERVER_ID = "SERVER ID"
 CHANNEL_ID = "CHANNEL ID"
 
-openai.api_key = "API_KEY"
+openai.api_key = "API KEY"
 
 script_dir = os.path.dirname(__file__)
 relative_path_wav = "Sound/"
@@ -168,30 +168,28 @@ def ai_summary():
 	return ai_summary
 
 
-def time_luikaus():
-	h = random.randint(8, 21)
-	m = random.randint(0, 59)
-	luikaus_time = datetime.time(h, m)
-	return luikaus_time
-
-
-@tasks.loop(hours=24)
+@tasks.loop(minutes = 1)
 async def luikaus_loop():
-	schedule_time_hour = time_luikaus().hour
-	schedule_time_minute = time_luikaus().minute
-
-	if schedule_time_hour  == datetime.datetime.now().hour and schedule_time_minute == datetime.datetime.now().minute:
-		channel = client.get_channel(CHANNEL_ID)
-		await channel.send(luikaus())
+	rng = random.randint(0,720)
+	print(rng)
+	hour = datetime.datetime.now().hour
+	earliest = 9
+	latest = 21
+	if  rng == 22 and earliest <= hour and hour <= latest:
+		try:
+			channel = client.get_channel(CHANNEL_ID)
+			await channel.send(luikaus())
+		except AttributeError:
+			print("naps")
 
 
 @tasks.loop(minutes=1)
 async def daily_loop():
 	x = datetime.time(16, 00)
-	schedule_time_hour = x.hour
-	schedule_time_minute = x.minute
+	scheduled_time_hour = x.hour
+	scheduled_time_minute = x.minute
 
-	if schedule_time_hour  == datetime.datetime.now().hour and schedule_time_minute == datetime.datetime.now().minute:
+	if scheduled_time_hour  == datetime.datetime.now().hour and scheduled_time_minute == datetime.datetime.now().minute:
 		channel = client.get_channel(CHANNEL_ID)
 		try:
 			await channel.send("_" + ai_summary() + "_" + "\n" + daily())
