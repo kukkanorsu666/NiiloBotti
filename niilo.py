@@ -124,7 +124,7 @@ async def live_status():
 
 	if "katsojaa" in ENCODED.decode():
 		r = requests.get("https://www.youtube.com/@niilo22games/live")
-		s = BeautifulSoup(r.text)
+		s = BeautifulSoup(r.text, "html.parser")
 		link = s.find_all(name="title")[0]
 		title = link.text
 		title = title.replace(" - YouTube","")
@@ -170,7 +170,7 @@ def ai_summary():
 
 @tasks.loop(minutes = 1)
 async def luikaus_loop():
-	rng = random.randint(0,720)
+	rng = random.randint(0,1500)
 	print(rng)
 	hour = datetime.datetime.now().hour
 	earliest = 9
@@ -191,10 +191,22 @@ async def daily_loop():
 
 	if scheduled_time_hour  == datetime.datetime.now().hour and scheduled_time_minute == datetime.datetime.now().minute:
 		channel = client.get_channel(CHANNEL_ID)
-		try:
-			await channel.send("_" + ai_summary() + "_" + "\n" + daily())
-		except:
-			await channel.send("_" + "Napsahti että pärähti! (joku meni pieleen)" + "_" + "\n" + daily())
+		attempt = 0
+		for x in range(0, 14):
+			try:
+				await channel.send("_" + ai_summary() + "_" + "\n" + daily())
+				err = None
+			except Exception as e:
+				if attempt == 13:
+					await channel.send("Napsahti että pärähti! (" + err + ")" + "\n" + daily())
+					break
+				err = str(e)
+				attempt += 1
+				print(f"#{attempt} - {err}")
+			if err:
+				await sleep(2)
+			else:
+				break
 
 daily_loop.start()
 live_check.start()
