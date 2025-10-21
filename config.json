@@ -1,0 +1,10 @@
+{
+	"BOT_TOKEN": "",
+	"SERVER_ID": "",
+	"CHANNEL_ID": "",
+	"openai.api_key": "",
+	"host": "localhost",
+	"user": "",
+	"password": "",
+	"database": ""
+}
