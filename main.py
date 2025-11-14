@@ -10,7 +10,7 @@ client = commands.Bot(command_prefix="!", intents=intents)
 async def on_ready():
 	print("Valmis")
 
-setup_commands(client)
-setup_tasks(client)
-
-client.run(BOT_TOKEN)
+if __name__ == "__main__":
+	setup_commands(client)
+	setup_tasks(client)
+	client.run(BOT_TOKEN)
