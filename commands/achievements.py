@@ -5,7 +5,7 @@ from config import *
 from PIL import Image
 
 def setup_achievements(client):
-	#
+	
 	@client.slash_command(name = "akit", description = "Aiiiaiiiaiiiii", guild_ids=[SERVER_ID])
 	async def akkicom(interaction: disnake.ApplicationCommandInteraction, user: disnake.User = None):
 		user = user or interaction.author

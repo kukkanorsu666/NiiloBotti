@@ -542,7 +542,83 @@ async def add_reaction(discord_id: int, amount: int = 1):
 			""", (discord_id, amount))
 		await db.commit()
 
-#Tarkastaa onko kaikki saavutukset ansaittu
+
+async def get_reaction_data(discord_id: int):
+    async with get_db_connection() as db:
+        async with db.cursor(aiomysql.DictCursor) as cursor:
+            await cursor.execute("""
+                SELECT reaction_count, last_reacted_at, reaction_streak
+                FROM user_reactions
+                WHERE discord_id=%s
+            """, (discord_id,))
+            return await cursor.fetchone()
+
+
+async def update_reaction_data(discord_id: int, reaction_count: int, streak: int, now: datetime.datetime):
+	async with get_db_connection() as db:
+		async with db.cursor() as cursor:
+			await cursor.execute("""
+				UPDATE user_reactions
+				SET reaction_count=%s,
+					reaction_streak=%s,
+					last_reacted_at=%s
+				WHERE discord_id=%s
+			""", (reaction_count, streak, now, discord_id))
+		await db.commit()
+
+
+async def update_reaction_streak_logic(discord_id: int, last_reactor_id: int) -> int:
+	now = datetime.datetime.now()
+	async with get_db_connection() as db:
+		async with db.cursor(aiomysql.DictCursor) as cursor:
+			await cursor.execute("""
+				SELECT reaction_count, last_reacted_at, last_reactor_id, reaction_streak
+				FROM user_reactions
+				WHERE discord_id=%s
+			""", (discord_id,))
+			data = await cursor.fetchone()
+
+			if data is None:
+				await cursor.execute("""
+					INSERT INTO user_reactions (discord_id, reaction_count, last_reacted_at, reaction_streak, last_reactor_id)
+					VALUES (%s, 1, %s, 1, %s)
+				""", (discord_id, now, last_reactor_id))
+				streak = 1
+			else:
+				old_streak = data["reaction_streak"]
+				reaction_count = data["reaction_count"]
+				last_reactor = data.get("last_reactor_id")
+
+				# Reset streak if last reaction is from different user
+				if last_reactor != last_reactor_id:
+					streak = 1
+				else:
+					streak = old_streak + 1
+
+				await cursor.execute("""
+					UPDATE user_reactions
+					SET reaction_count = %s,
+						reaction_streak = %s,
+						last_reacted_at = %s,
+						last_reactor_id = %s
+					WHERE discord_id = %s
+				""", (reaction_count + 1, streak, now, last_reactor_id, discord_id))
+
+		await db.commit()
+
+	async with get_db_connection() as db:
+		async with db.cursor() as cursor:
+			for ach_id in ["reaction_streak_3", "reaction_streak_7"]:
+				await cursor.execute("""
+					INSERT INTO user_achievements (discord_id, achievement_id, progress, unlocked)
+					VALUES (%s, %s, %s, 0)
+					ON DUPLICATE KEY UPDATE progress = VALUES(progress)
+				""", (discord_id, ach_id, streak))
+		await db.commit()
+
+	return streak
+
+
 async def check_all_achievements_unlocked(client, discord_id: int):
     conn = await aiomysql.connect(**DB_CONFIG)
     async with conn.cursor(aiomysql.DictCursor) as cursor:

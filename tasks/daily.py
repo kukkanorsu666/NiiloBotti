@@ -1,7 +1,7 @@
 from imports import *
 from config import CHANNEL_ID, SERVER_ID
 from db import give_points, give_points_daily
-from utils import ai_summary, daily, check_achievements, get_total_reactions, add_reaction
+from utils import ai_summary, daily, check_achievements, get_total_reactions, add_reaction, update_reaction_streak_logic
 
 tracked_message_id = None
 handled_reactions = set()
@@ -67,3 +67,6 @@ async def daily_reaction_handler(reaction, user):
 		await check_achievements(client, user.id, 'reaction_wins_10', total_reactions)
 		await check_achievements(client, user.id, 'reaction_wins_30', total_reactions)
 		await check_achievements(client, user.id, 'reaction_wins_50', total_reactions)
+		streak = await update_reaction_streak_logic(user.id, user.id)
+		await check_achievements(client, user.id, "reaction_streak_3", streak)
+		await check_achievements(client, user.id, "reaction_streak_7", streak)
