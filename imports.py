@@ -9,3 +9,6 @@ from bs4 import BeautifulSoup
 from contextlib import asynccontextmanager
 from moviepy import VideoFileClip, clips_array, concatenate_videoclips, ImageClip, CompositeVideoClip
 from moviepy.video.VideoClip import ColorClip
+
+intents = disnake.Intents.all()
+client = commands.Bot(command_prefix="!", intents=intents)

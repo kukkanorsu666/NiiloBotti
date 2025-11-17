@@ -1,7 +1,7 @@
 from imports import *
 from db import fetch_points
 from config import *
-from utils import *
+from utils import check_achievements, lotto, pay_bet
 
 def setup_points(client):
 	#Botti kertoo kuinka monta niilopistettä käyttäjällä on
@@ -21,8 +21,10 @@ def setup_points(client):
 
 		current_points = await fetch_points(interaction.user.id)
 		channel = client.get_channel(CHANNEL_ID)
+		user_id = interaction.user.id
 
 		if panos is None or panos <= 0:
+			await check_achievements(client, user_id, 'gamble_with_0', 1)
 			await interaction.followup.send("Ei tätä ilmatteeks pelata")
 		elif current_points < panos:
 			await interaction.followup.send("https://tenor.com/view/niilo-niilo22-mene-toihin-mee-gif-8148789")
