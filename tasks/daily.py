@@ -1,7 +1,7 @@
 from imports import *
 from config import CHANNEL_ID, SERVER_ID
 from db import give_points, give_points_daily
-from utils import ai_summary, daily
+from utils import ai_summary, daily, check_achievements, get_total_reactions, add_reaction
 
 tracked_message_id = None
 handled_reactions = set()
@@ -45,20 +45,25 @@ def setup_daily(client):
 	async def before_daily_loop():
 		await client.wait_until_ready()
 
-	daily_loop.start()				
+	daily_loop.start()
 
 
 
 
-	#Antaa 5 niilopistettä ensimmäiselle joka reagoi päivän videoon
-	@client.event
-	async def on_reaction_add(reaction, user):
-		global handled_reactions
+#Antaa 5 niilopistettä ensimmäiselle joka reagoi päivän videoon
+@client.listen("on_reaction_add")
+async def daily_reaction_handler(reaction, user):
+	global handled_reactions
 
-		if user == client.user:
-			return
+	if user == client.user:
+		return
 
-		if reaction.message.id == tracked_message_id and reaction.message.id not in handled_reactions:
-			handled_reactions.add(reaction.message.id)
-			await reaction.message.channel.send(f"{user.mention} ansaitsi 5 niilopistettä")
-			await give_points(user.id, 5)
+	if reaction.message.id == tracked_message_id and reaction.message.id not in handled_reactions:
+		handled_reactions.add(reaction.message.id)
+		await reaction.message.channel.send(f"{user.mention} ansaitsi 5 niilopistettä")
+		await give_points(client, user.id, 5)
+		await add_reaction(user.id, 1)
+		total_reactions = await get_total_reactions(user.id)
+		await check_achievements(client, user.id, 'reaction_wins_10', total_reactions)
+		await check_achievements(client, user.id, 'reaction_wins_30', total_reactions)
+		await check_achievements(client, user.id, 'reaction_wins_50', total_reactions)
