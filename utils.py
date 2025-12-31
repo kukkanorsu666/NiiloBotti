@@ -213,10 +213,9 @@ async def pay_bet(client, discord_id: int, bet: int):
 				)
 			await cursor.execute(
 				"""
-				UPDATE user_achievements
-				SET progress = progress +1
-				WHERE discord_id = %s
-					AND achievement_id = 'gamble_count_300'
+				INSERT INTO user_achievements (discord_id, achievement_id, progress)
+				VALUES (%s, 'gamble_count_300', 1)
+				ON DUPLICATE KEY UPDATE progress = progress + 1
 				""",
 					(discord_id,),
 				)
