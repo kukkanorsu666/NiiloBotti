@@ -14,4 +14,4 @@ if __name__ == "__main__":
 	setup_commands(client)
 	setup_tasks(client)
 
-	client.run(BOT_TOKEN)	
+	client.run(BOT_TOKEN)

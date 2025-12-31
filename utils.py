@@ -144,6 +144,8 @@ async def lotto(client, interaction, mention, discord_id, panos):
 		result_amount = 0
 
 	await check_achievements(client, discord_id, 'gamble_single_1000', panos)
+
+	await check_achievements(client, discord_id, 'gamble_single_1000', panos)
 	await check_achievements(client, discord_id, 'gamble_single_10000', panos)
 	await check_achievements(client, discord_id, 'gamble_single_100000', panos)
 	lose_streak_before = await get_lose_streak(discord_id)
@@ -185,7 +187,7 @@ async def pay_bet(client, discord_id: int, bet: int):
 	current = await fetch_points(discord_id)
     
 	async with get_db_connection() as db:
-		async with db.cursor() as cursor:
+		async with db.cursor(aiomysql.DictCursor) as cursor:
 			await cursor.execute(
 				"""
 				INSERT INTO niilopisteet (discord_id, points)
@@ -194,9 +196,51 @@ async def pay_bet(client, discord_id: int, bet: int):
 				""",
 				(discord_id, bet),
 			)
+
+			await cursor.execute(
+				"""
+				UPDATE user_achievements
+				SET progress = GREATEST(progress - %s, 0)
+				WHERE discord_id = %s
+					AND achievement_id IN (
+						"points_total_1000",
+						"points_total_10000",
+						"points_total_100000",
+						"points_total_1000000"
+					)
+				""",
+					(bet, discord_id),
+				)
+			await cursor.execute(
+				"""
+				UPDATE user_achievements
+				SET progress = progress +1
+				WHERE discord_id = %s
+					AND achievement_id = 'gamble_count_300'
+				""",
+					(discord_id,),
+				)
+
+			await cursor.execute(
+				"""
+				SELECT progress
+				FROM user_achievements
+				WHERE discord_id = %s
+					AND achievement_id = 'gamble_count_300'
+				""",
+					(discord_id,),
+				)
+			data = await cursor.fetchone()
 		await db.commit()
 
+
+	gamble_count = data["progress"]
 	new_points = await fetch_points(discord_id)
+	await check_achievements(client, discord_id, 'gamble_count_300', gamble_count)
+	await check_achievements(client, discord_id, 'points_total_1000', new_points)
+	await check_achievements(client, discord_id, 'points_total_10000', new_points)
+	await check_achievements(client, discord_id, 'points_total_100000', new_points)
+	await check_achievements(client, discord_id, 'points_total_1000000', new_points)
 
 	if new_points <= 0:
 		channel = client.get_channel(CHANNEL_ID)
@@ -569,6 +613,18 @@ async def update_reaction_data(discord_id: int, reaction_count: int, streak: int
 
 async def update_reaction_streak_logic(discord_id: int, last_reactor_id: int) -> int:
 	now = datetime.datetime.now()
+	#Viimeisin reaktio
+	async with get_db_connection() as db:
+		async with db.cursor(aiomysql.DictCursor) as cursor:
+			await cursor.execute("""
+				SELECT discord_id, last_reacted_at
+				FROM user_reactions
+				WHERE last_reacted_at = (SELECT MAX(last_reacted_at) FROM user_reactions)
+				ORDER BY discord_id, last_reacted_at
+			""", )
+			data1 = await cursor.fetchone()
+		await db.commit()
+
 	async with get_db_connection() as db:
 		async with db.cursor(aiomysql.DictCursor) as cursor:
 			await cursor.execute("""
@@ -587,9 +643,12 @@ async def update_reaction_streak_logic(discord_id: int, last_reactor_id: int) ->
 			else:
 				old_streak = data["reaction_streak"]
 				reaction_count = data["reaction_count"]
-				last_reactor = data.get("last_reactor_id")
+				if data1 is None:
+					last_reactor = None
+				else:
+					last_reactor = data1.get("discord_id")
+				print(last_reactor)
 
-				# Reset streak if last reaction is from different user
 				if last_reactor != last_reactor_id:
 					streak = 1
 				else:

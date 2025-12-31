@@ -60,7 +60,7 @@ async def daily_reaction_handler(reaction, user):
 
 	if reaction.message.id == tracked_message_id and reaction.message.id not in handled_reactions:
 		handled_reactions.add(reaction.message.id)
-		await reaction.message.channel.send(f"{user.mention} ansaitsi 5 niilopistettä")
+		await reaction.message.channel.send(f"{user.mention} Ansaitsi 5 niilopistettä")
 		await give_points(client, user.id, 5)
 		await add_reaction(user.id, 1)
 		total_reactions = await get_total_reactions(user.id)
