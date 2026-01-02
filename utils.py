@@ -660,7 +660,7 @@ async def update_reaction_streak_logic(discord_id: int, last_reactor_id: int) ->
 						last_reacted_at = %s,
 						last_reactor_id = %s
 					WHERE discord_id = %s
-				""", (reaction_count + 1, streak, now, last_reactor_id, discord_id))
+				""", (reaction_count, streak, now, last_reactor_id, discord_id))
 
 		await db.commit()
 
@@ -725,4 +725,5 @@ async def check_all_achievements_unlocked(client, discord_id: int):
 
     if unlocked_now:
         channel = client.get_channel(CHANNEL_ID)
+
         await channel.send(f"<@{discord_id}> Ansaitsi saavutuksen: **Saavutusten hamstraaja**!")
