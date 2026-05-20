@@ -2,9 +2,11 @@ from imports import *
 from config import CHANNEL_ID, SERVER_ID
 from db import give_points, give_points_daily
 from utils import ai_summary, daily, check_achievements, get_total_reactions, add_reaction, update_reaction_streak_logic
+from commands.niilokortit import change_boosterpack_amount
 
 tracked_message_id = None
 handled_reactions = set()
+
 
 def setup_daily(client):
 	#Lähettää uusimman Niilon videon päivittäin klo 16
@@ -60,8 +62,16 @@ async def daily_reaction_handler(reaction, user):
 
 	if reaction.message.id == tracked_message_id and reaction.message.id not in handled_reactions:
 		handled_reactions.add(reaction.message.id)
-		await reaction.message.channel.send(f"{user.mention} Ansaitsi 5 niilopistettä")
+		random_number = random.randint(1,3)
+		if random_number == 1:
+			await change_boosterpack_amount(user.id, 1)
+			await reaction.message.channel.send(f"{user.mention} Ansaitsi 5 niilopistettä ja löysi korttipakan!")
+		else:
+			await reaction.message.channel.send(f"{user.mention} Ansaitsi 5 niilopistettä")
 		await give_points(client, user.id, 5)
+		
+
+
 		await add_reaction(user.id, 1)
 		total_reactions = await get_total_reactions(user.id)
 		await check_achievements(client, user.id, 'reaction_wins_10', total_reactions)
