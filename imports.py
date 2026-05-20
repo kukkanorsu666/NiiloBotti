@@ -1,4 +1,4 @@
-import disnake, os, random, scrapetube, datetime, time, requests, openai, asyncio, aiomysql, json
+import disnake, os, io, random, scrapetube, datetime, time, requests, openai, asyncio, aiomysql, json, itertools, feedparser
 from asyncio import sleep
 from disnake.ext import tasks, commands
 from disnake import Interaction, FFmpegPCMAudio

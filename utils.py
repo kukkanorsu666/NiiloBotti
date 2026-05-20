@@ -128,13 +128,13 @@ async def lotto(client, interaction, mention, discord_id, panos):
 
 	await asyncio.sleep(10)
 	if jackpot:
-		await interaction.followup.send(f"{mention} sai JÄKPOTIN ja voitti {panos * 12} niilopistettä!")
-		await give_points(client, discord_id, panos * 12)
-		result_amount = panos * 12
+		await interaction.followup.send(f"{mention} sai JÄKPOTIN ja voitti {panos * 8} niilopistettä!")
+		await give_points(client, discord_id, panos * 8)
+		result_amount = panos * 8
 	elif mid_win:
-		await interaction.followup.send(f"{mention} sai 3 peräkkäin ja voitti {panos * 4} niilopistettä!")
-		await give_points(client, discord_id, panos * 4)
-		result_amount = panos * 4
+		await interaction.followup.send(f"{mention} sai 3 peräkkäin ja voitti {panos * 3} niilopistettä!")
+		await give_points(client, discord_id, panos * 3)
+		result_amount = panos * 3
 	elif low_win:
 		await interaction.followup.send(f"{mention} sai 2 peräkkäin ja voitti omat takas")
 		await give_points(client, discord_id, panos * 1)
@@ -394,8 +394,6 @@ async def show_achievements(client,discord_id, user):
 
 	achievement_progress = await get_user_achievement_progress(user.id)
 	
-
-
 	for achievement_id, name, description in left_achievements:
 		unlocked = achievement_progress[achievement_id]["unlocked"]
 		emoji = achievement_emojis.get(achievement_id, ":x:")
@@ -430,7 +428,6 @@ async def show_achievements(client,discord_id, user):
 	for achievement_id, name, description in right_achievements:
 		unlocked = achievement_progress[achievement_id]["unlocked"]
 		emoji = achievement_emojis.get(achievement_id, ":x:")
-
 
 		async with get_db_connection() as db:
 			async with db.cursor(aiomysql.DictCursor) as cursor:
@@ -476,11 +473,8 @@ async def show_achievements(client,discord_id, user):
 	background.paste(user_image, (100, 100), user_image)
 	background.save("user_achievements.png")
 
-
 	return background
 
-
-############################SAAVUTUKSET############################
 
 #Tallennetaan pelihistoria tietokantaan
 async def log_gamble(discord_id: int, bet_amount: int, result_amount: int):
@@ -725,5 +719,4 @@ async def check_all_achievements_unlocked(client, discord_id: int):
 
     if unlocked_now:
         channel = client.get_channel(CHANNEL_ID)
-
         await channel.send(f"<@{discord_id}> Ansaitsi saavutuksen: **Saavutusten hamstraaja**!")

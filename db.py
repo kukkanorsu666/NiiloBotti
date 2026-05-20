@@ -71,23 +71,28 @@ async def fetch_points(discord_id: int):
 			return row["points"] if row else 0
 
 #Poistetaan niilopisteitä
-async def remove_point(ctx, n: int):
-	current = await fetch_points(n)
+async def remove_points(client, discord_id: int, amount: int = 1):
+	if amount <= 0:
+		return False
 
-	if current <= 0:
-			await ctx.send("https://tenor.com/view/niilo-niilo22-mene-toihin-mee-gif-8148789")
-			return False
+	current = await fetch_points(discord_id)
+
+	if current <= amount:
+		return False
 
 	async with get_db_connection() as db:
 		async with db.cursor() as cursor:
 
 			await cursor.execute(
-								"""
+				"""
 				INSERT INTO niilopisteet (discord_id, points)
 				VALUES (%s, 0)
-				ON DUPLICATE KEY UPDATE points = GREATEST(points - %s, 0)
+				ON DUPLICATE KEY UPDATE
+					points = GREATEST(points - %s, 0)
 				""",
-				(n,1),
-						)
+				(discord_id, amount),
+			)
+
 		await db.commit()
+
 	return True
