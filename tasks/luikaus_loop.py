@@ -2,6 +2,7 @@ from imports import *
 from config import CHANNEL_ID
 from utils import luikaus
 from db import give_points
+from commands.niilokortit import change_boosterpack_amount
 
 tracked_message_id_rand = None
 handled_reactions_rand = set()
