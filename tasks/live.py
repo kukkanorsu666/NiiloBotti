@@ -11,7 +11,8 @@ def setup_live_tasks(client):
 		await client.wait_until_ready()
 
 		channel_url = "https://www.youtube.com/@niilo22games/"
-		content = requests.get(channel_url, cookies={"CONSENT":"PENDING+696969", "SOCS":"CAESEwgDEgk2OTA4MDQ2NDQaAmVuIAEaBgiAkYu5Bg"}).text
+		response = await asyncio.to_thread(requests.get, channel_url, cookies={"CONSENT":"PENDING+696969", "SOCS":"CAESEwgDEgk2OTA4MDQ2NDQaAmVuIAEaBgiAkYu5Bg"})
+		content = response.text
 		ENCODED = str(content).encode("ascii", "ignore")
 
 		if "katsojaa" in ENCODED.decode():
@@ -25,11 +26,12 @@ def setup_live_tasks(client):
 		await client.wait_until_ready()
 
 		channel_url = "https://www.youtube.com/@niilo22games/"
-		content = requests.get(channel_url, cookies={"CONSENT":"PENDING+696969", "SOCS":"CAESEwgDEgk2OTA4MDQ2NDQaAmVuIAEaBgiAkYu5Bg"}).text
+		response = await asyncio.to_thread(requests.get, channel_url, cookies={"CONSENT":"PENDING+696969", "SOCS":"CAESEwgDEgk2OTA4MDQ2NDQaAmVuIAEaBgiAkYu5Bg"})
+		content = response.text
 		ENCODED = str(content).encode("ascii", "ignore")
 
 		if "katsojaa" in ENCODED.decode():
-			r = requests.get("https://www.youtube.com/@niilo22games/live")
+			r = await asyncio.to_thread(requests.get, "https://www.youtube.com/@niilo22games/live")
 			s = BeautifulSoup(r.text, "html.parser")
 			link = s.find_all(name="title")[0]
 			title = link.text

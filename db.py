@@ -77,7 +77,7 @@ async def remove_points(client, discord_id: int, amount: int = 1):
 
 	current = await fetch_points(discord_id)
 
-	if current <= amount:
+	if current < amount:
 		return False
 
 	async with get_db_connection() as db:

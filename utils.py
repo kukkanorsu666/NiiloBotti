@@ -162,25 +162,25 @@ async def lotto(client, interaction, mention, discord_id, panos):
 		await check_achievements(client, discord_id, 'gamble_lose_4', 0)
 
 async def get_lose_streak(discord_id: int) -> int:
-	conn = await aiomysql.connect(**DB_CONFIG)
-	async with conn.cursor() as cursor:
-		await cursor.execute("""
-			SELECT outcome
-			FROM gamble_history
-			WHERE discord_id = %s
-			ORDER BY created_at DESC
-			LIMIT 4
-		""", (discord_id,))
-        
-		rows = await cursor.fetchall()
+	async with get_db_connection() as db:
+		async with db.cursor() as cursor:
+			await cursor.execute("""
+				SELECT outcome
+				FROM gamble_history
+				WHERE discord_id = %s
+				ORDER BY created_at DESC
+				LIMIT 4
+			""", (discord_id,))
 
-		streak = 0
-		for r in rows:
-			if r[0] == "lose":
-				streak += 1
-			else:
-				break
-		return streak
+			rows = await cursor.fetchall()
+
+			streak = 0
+			for r in rows:
+				if r[0] == "lose":
+					streak += 1
+				else:
+					break
+			return streak
 
 #Panoksen maksu
 async def pay_bet(client, discord_id: int, bet: int):
@@ -458,7 +458,7 @@ async def show_achievements(client,discord_id, user):
 
 	#Käyttäjän profiilikuva
 	user_picture = user.display_avatar.url
-	img_data = requests.get(user_picture).content
+	img_data = (await asyncio.to_thread(requests.get, user_picture)).content
 	with open('user_image.png', 'wb') as handler:
 		handler.write(img_data)
 	user_image = Image.open("user_image.png").convert("RGBA")

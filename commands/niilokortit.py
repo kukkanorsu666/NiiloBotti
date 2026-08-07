@@ -217,9 +217,9 @@ async def change_boosterpack_amount(discord_id, amount: int = 1):
 			await cursor.execute(
 				"""
 				INSERT INTO korttipakat (discord_id, boosterpacks)
-				VALUES (%s, 0)
+				VALUES (%s, %s)
 				ON DUPLICATE KEY UPDATE
-					boosterpacks = GREATEST(boosterpacks + %s, 0)
+					boosterpacks = GREATEST(boosterpacks + VALUES(boosterpacks), 0)
 				""",
 				(discord_id, amount),
 			)

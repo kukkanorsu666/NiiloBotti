@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.log
+venv/
+user_image.png
+user_cards.png
+user_achievements.png
+lotto.gif

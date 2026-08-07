@@ -24,14 +24,17 @@ def setup_daily(client):
 			attempt = 0
 			for x in range(0, 2):
 				try:
-					msg = await channel.send("_" + ai_summary() + "_" + "\n" + daily())
+					summary = await asyncio.to_thread(ai_summary)
+					video_url = await asyncio.to_thread(daily)
+					msg = await channel.send("_" + summary + "_" + "\n" + video_url)
 					tracked_message_id = msg.id
 					err = None
-						
+
 				except Exception as e:
 					print(e)
 					if attempt == 1:
-						msg = await channel.send("Napsahti että pärähti! (" + err + ")" + "\n" + daily())
+						video_url = await asyncio.to_thread(daily)
+						msg = await channel.send("Napsahti että pärähti! (" + err + ")" + "\n" + video_url)
 						tracked_message_id = msg.id
 						break
 					err = str(e)

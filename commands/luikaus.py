@@ -10,7 +10,7 @@ def setup_luikaus(client):
 		interaction: disnake.ApplicationCommandInteraction,
 		numero: Optional[int] = None):
 
-		if numero is None or numero > 195 or numero < 0:
+		if numero is None or numero > 194 or numero < 0:
 			await interaction.response.send_message(luikaus())
 
 		else:
