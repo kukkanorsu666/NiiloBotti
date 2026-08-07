@@ -31,18 +31,20 @@ cards = [
 async def get_user_cards(discord_id):
 	async with get_db_connection() as db:
 		async with db.cursor(aiomysql.DictCursor) as cursor:
-			card_data = {}
-			for card_id, _ in cards:
-				await cursor.execute("""
-					SELECT owned, quantity
-					FROM user_cards
-					WHERE discord_id=%s AND card_id=%s
-				""", (discord_id, card_id))
-				row = await cursor.fetchone()
-				owned = row['owned'] == 1 if row else False
-				quantity = row['quantity'] if row else 0
-				card_data[card_id] = {"owned": owned, "quantity": quantity}
-			return card_data
+			await cursor.execute("""
+				SELECT card_id, owned, quantity
+				FROM user_cards
+				WHERE discord_id=%s
+			""", (discord_id,))
+			rows = {row['card_id']: row for row in await cursor.fetchall()}
+
+	card_data = {}
+	for card_id, _ in cards:
+		row = rows.get(card_id)
+		owned = row['owned'] == 1 if row else False
+		quantity = row['quantity'] if row else 0
+		card_data[card_id] = {"owned": owned, "quantity": quantity}
+	return card_data
 
 card_mapping = {
 	":hidden:": Image.open("Niilokortit/hidden.png").resize((500,750)),

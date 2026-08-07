@@ -4,6 +4,26 @@ from db import give_points, get_db_connection, fetch_points
 from PIL import Image, ImageFont, ImageDraw
 import re
 
+ACHIEVEMENT_EMOJI_MAPPING = {
+	":checkmark:": Image.open("emojis/checkmark.png").resize((50,50)),
+	":x:": Image.open("emojis/x.png").resize((50,50)),
+	":rank_1:": Image.open("emojis/level-1.png").resize((50,50)),
+	":rank_2:": Image.open("emojis/level-2.png").resize((50,50)),
+	":rank_3:": Image.open("emojis/level-3.png").resize((50,50)),
+	":rank_4:": Image.open("emojis/level-4.png").resize((50,50)),
+	":rank_5:": Image.open("emojis/level-5.png").resize((50,50)),
+	":rank_6:": Image.open("emojis/level-6.png").resize((50,50)),
+	":rank_7:": Image.open("emojis/level-7.png").resize((50,50)),
+	":rank_8:": Image.open("emojis/crown.png").resize((50,50)),
+}
+
+ACHIEVEMENTS_FONT_NAME = ImageFont.truetype("fonts/Play-Bold.ttf", 30)
+ACHIEVEMENTS_FONT_DESC = ImageFont.truetype("fonts/Play-Regular.ttf", 24)
+ACHIEVEMENTS_FONT_TITLE = ImageFont.truetype("fonts/Play-Bold.ttf", 60)
+ACHIEVEMENTS_FONT_USERNAME = ImageFont.truetype("fonts/Play-Regular.ttf", 45)
+
+LOTTO_CACHE_DIR = "lotto_cache"
+
 #Valitsee satunnaisen luikauksen luikaukset.txt tiedostosta
 def luikaus():
 	random_luikaus = open("luikaukset.txt", encoding='utf-8').read().splitlines()
@@ -78,7 +98,7 @@ async def pick_gifs():
 	mid_win = "111" in pattern and not jackpot
 	low_win = "11" in pattern and not mid_win and not jackpot
 
-	return selected_gifs, jackpot, mid_win, low_win
+	return selected_gifs, jackpot, mid_win, low_win, pattern
 
 
 #Hakee uusimman videon Niilon kanavalta
@@ -98,33 +118,59 @@ async def get_total_bet(discord_id: int):
 
 #Lotto skripti/gifin valmistus
 async def lotto(client, interaction, mention, discord_id, panos):
-	selected_gifs, jackpot, mid_win, low_win = await pick_gifs()
+	selected_gifs, jackpot, mid_win, low_win, pattern = await pick_gifs()
+
 	def make_gif():
-		clips = [VideoFileClip(p) for p in selected_gifs]
-		max_duration = max(c.duration for c in clips)
-		processed_clips = []
-		bg_color = (255,255,255)
+		os.makedirs(LOTTO_CACHE_DIR, exist_ok=True)
+		cache_path = os.path.join(LOTTO_CACHE_DIR, f"{pattern}.gif")
+		if os.path.exists(cache_path):
+			return cache_path
 
-		for c in clips:
-			if c.duration < max_duration:
-				last_frame_array = c.get_frame(c.duration - 1 / c.fps)
-				last_frame_clip = ImageClip(last_frame_array).with_duration(max_duration - c.duration)
-				c_final = concatenate_videoclips([c, last_frame_clip])
-			else:
-				c_final = c
+		to_close = []
+		try:
+			clips = [VideoFileClip(p) for p in selected_gifs]
+			to_close.extend(clips)
+			max_duration = max(c.duration for c in clips)
+			processed_clips = []
+			bg_color = (255,255,255)
 
-			solid_bg = ColorClip(size=c_final.size, color=bg_color).with_duration(max_duration)
-			c_final = CompositeVideoClip([solid_bg, c_final])
-			processed_clips.append(c_final)
+			for c in clips:
+				if c.duration < max_duration:
+					last_frame_array = c.get_frame(c.duration - 1 / c.fps)
+					last_frame_clip = ImageClip(last_frame_array).with_duration(max_duration - c.duration)
+					to_close.append(last_frame_clip)
+					c_final = concatenate_videoclips([c, last_frame_clip])
+					to_close.append(c_final)
+				else:
+					c_final = c
 
-		min_height = min(c.h for c in processed_clips)
-		processed_clips = [c.resized(height=min_height) for c in processed_clips]
-		final_clip = clips_array([processed_clips]).with_fps(12)
-		final_clip.write_gif("lotto.gif", fps=12, loop=None)
+				solid_bg = ColorClip(size=c_final.size, color=bg_color).with_duration(max_duration)
+				to_close.append(solid_bg)
+				c_final = CompositeVideoClip([solid_bg, c_final])
+				to_close.append(c_final)
+				processed_clips.append(c_final)
 
-	await asyncio.to_thread(make_gif)
+			min_height = min(c.h for c in processed_clips)
+			processed_clips = [c.resized(height=min_height) for c in processed_clips]
+			to_close.extend(processed_clips)
+			final_clip = clips_array([processed_clips]).with_fps(12)
+			to_close.append(final_clip)
+
+			tmp_path = cache_path + ".tmp"
+			final_clip.write_gif(tmp_path, fps=12, loop=None)
+			os.replace(tmp_path, cache_path)
+		finally:
+			for clip in to_close:
+				try:
+					clip.close()
+				except Exception:
+					pass
+
+		return cache_path
+
+	gif_path = await asyncio.to_thread(make_gif)
 	channel = client.get_channel(CHANNEL_ID)
-	await interaction.followup.send(f"Pyöräyttäjä: {mention} panoksella: {panos} ", file=disnake.File("lotto.gif"))
+	await interaction.followup.send(f"Pyöräyttäjä: {mention} panoksella: {panos} ", file=disnake.File(gif_path))
 
 	await asyncio.sleep(10)
 	if jackpot:
@@ -278,30 +324,37 @@ def draw_text_with_rounded_bg(draw, background, text, font, emoji_mapping, x, y,
 	max_width = max(w for w, h, c in line_sizes)
 	total_height = sum(h for w, h, c in line_sizes) + line_spacing * (len(lines)-1)
 
-	overlay = Image.new("RGBA", (max_width + 2*padding, total_height + 2*padding), (0,0,0,0))
-	overlay_draw = ImageDraw.Draw(overlay)
+	# A fully transparent background has no visible effect, so skip building
+	# a separate overlay/composite and draw straight onto the background.
+	if bg_color[3] == 0:
+		target_image, target_draw = background, draw
+		base_x, base_y = x, y
+	else:
+		overlay = Image.new("RGBA", (max_width + 2*padding, total_height + 2*padding), (0,0,0,0))
+		target_image, target_draw = overlay, ImageDraw.Draw(overlay)
+		target_draw.rounded_rectangle(
+			(0, 0, max_width + 2*padding, total_height + 2*padding),
+			radius=radius,
+			fill=bg_color
+		)
+		base_x, base_y = padding, padding
 
-	overlay_draw.rounded_rectangle(
-		(0, 0, max_width + 2*padding, total_height + 2*padding),
-		radius=radius,
-		fill=bg_color
-	)
-
-	current_y = padding
+	current_y = base_y
 	for total_w, h, combined in line_sizes:
-		current_x = padding
+		current_x = base_x
 		corrected_y = current_y
 		for part, f, w, ph in combined:
 			if f == "emoji":
 				emoji_img = emoji_mapping[part].convert("RGBA")
 				emoji_y = corrected_y + (h - ph) // 2
-				overlay.paste(emoji_img, (int(current_x), int(emoji_y)), emoji_img)
+				target_image.paste(emoji_img, (int(current_x), int(emoji_y)), emoji_img)
 			else:
-				overlay_draw.text((current_x, corrected_y), part, font=f, fill=text_color)
+				target_draw.text((current_x, corrected_y), part, font=f, fill=text_color)
 			current_x += w
 		current_y += h + line_spacing
 
-	background.alpha_composite(overlay, (x - padding, y - padding))
+	if bg_color[3] != 0:
+		background.alpha_composite(target_image, (x - padding, y - padding))
 
 achievements_to_check = [
 	("all_achievements", "Saavutusten hamstraaja", "Ansaitse kaikki saavutukset."),
@@ -326,61 +379,39 @@ achievements_to_check = [
 	("reaction_wins_50", "Refleksimestari", "Reagoi 50 kertaa päivän videoon."),
 	]
 
-async def get_achievement_emojis(discord_id):
-
-	async with get_db_connection() as db:
-		async with db.cursor(aiomysql.DictCursor) as cursor:
-			achievement_emojis = {}
-			for achievement_id, _, _ in achievements_to_check:
-				await cursor.execute("""
-					SELECT unlocked
-					FROM user_achievements
-					WHERE discord_id=%s AND achievement_id=%s
-				""", (discord_id, achievement_id))
-				row = await cursor.fetchone()
-				achievement_emojis[achievement_id] = ":checkmark:" if row and row['unlocked'] == 1 else ":x:"
-			return achievement_emojis
-
 async def get_user_achievement_progress(discord_id):
 	async with get_db_connection() as db:
 		async with db.cursor(aiomysql.DictCursor) as cursor:
-			achievement_data = {}
-			for achievement_id, _, _ in achievements_to_check:
-				await cursor.execute("""
-					SELECT progress, unlocked
-					FROM user_achievements
-					WHERE discord_id=%s AND achievement_id=%s
-				""", (discord_id, achievement_id))
-				row = await cursor.fetchone()
-				progress = row['progress'] if row else 0
-				unlocked = row['unlocked'] == 1 if row else False
-				emoji = ":checkmark:" if unlocked else ":x:"
-				achievement_data[achievement_id] = {"emoji": emoji, "progress": progress, "unlocked": unlocked}
-			return achievement_data
+			await cursor.execute("""
+				SELECT achievement_id, progress, unlocked
+				FROM user_achievements
+				WHERE discord_id=%s
+			""", (discord_id,))
+			rows = {row['achievement_id']: row for row in await cursor.fetchall()}
+
+	achievement_data = {}
+	for achievement_id, _, _ in achievements_to_check:
+		row = rows.get(achievement_id)
+		progress = row['progress'] if row else 0
+		unlocked = row['unlocked'] == 1 if row else False
+		emoji = ":checkmark:" if unlocked else ":x:"
+		achievement_data[achievement_id] = {"emoji": emoji, "progress": progress, "unlocked": unlocked}
+	return achievement_data
+
+async def get_achievement_requirements():
+	async with get_db_connection() as db:
+		async with db.cursor(aiomysql.DictCursor) as cursor:
+			await cursor.execute("SELECT achievement_id, requirement_value FROM achievements")
+			return {row['achievement_id']: row['requirement_value'] for row in await cursor.fetchall()}
 
 #Saavutusten näyttäminen
 async def show_achievements(client,discord_id, user):
-	emoji_mapping = {
-	":checkmark:": Image.open("emojis/checkmark.png").resize((50,50)),
-	":x:": Image.open("emojis/x.png").resize((50,50)),
-	":rank_1:": Image.open("emojis/level-1.png").resize((50,50)),
-	":rank_2:": Image.open("emojis/level-2.png").resize((50,50)),
-	":rank_3:": Image.open("emojis/level-3.png").resize((50,50)),
-	":rank_4:": Image.open("emojis/level-4.png").resize((50,50)),
-	":rank_5:": Image.open("emojis/level-5.png").resize((50,50)),
-	":rank_6:": Image.open("emojis/level-6.png").resize((50,50)),
-	":rank_7:": Image.open("emojis/level-7.png").resize((50,50)),
-	":rank_8:": Image.open("emojis/crown.png").resize((50,50))
-}
 	width = 1400
 	height = 1600
 	background = Image.new("RGBA", (width, height), (0,0,0,0))
 
-	font1 = ImageFont.truetype("fonts/Play-Bold.ttf", 30)
-	font2 = ImageFont.truetype("fonts/Play-Regular.ttf", 24)
-	font3 = ImageFont.truetype("fonts/Play-Bold.ttf", 60)
-	font4 = ImageFont.truetype("fonts/Play-Regular.ttf", 45)
-	achievement_emojis = await get_achievement_emojis(user.id)
+	achievement_progress = await get_user_achievement_progress(user.id)
+	requirements = await get_achievement_requirements()
 
 	mid_index = len(achievements_to_check) // 2
 	left_achievements = achievements_to_check[:mid_index]
@@ -392,29 +423,19 @@ async def show_achievements(client,discord_id, user):
 	right_y = 230
 	spacing = 120
 
-	achievement_progress = await get_user_achievement_progress(user.id)
-	
 	for achievement_id, name, description in left_achievements:
-		unlocked = achievement_progress[achievement_id]["unlocked"]
-		emoji = achievement_emojis.get(achievement_id, ":x:")
-
-		async with get_db_connection() as db:
-			async with db.cursor(aiomysql.DictCursor) as cursor:
-				await cursor.execute(
-					"SELECT requirement_value FROM achievements WHERE achievement_id=%s",
-					(achievement_id,)
-			)
-			required = (await cursor.fetchone())['requirement_value']
-			progress = achievement_progress[achievement_id]["progress"]
+		emoji = achievement_progress[achievement_id]["emoji"]
+		progress = achievement_progress[achievement_id]["progress"]
+		required = requirements.get(achievement_id, 0)
 
 		text_to_draw = f"{emoji} {name} ({progress}/{required})\n{description}"
 		draw_text_with_rounded_bg(
 			draw=ImageDraw.Draw(background),
 			background=background,
 			text=text_to_draw,
-			font=font1,
-			emoji_mapping=emoji_mapping,
-			last_line_font=font2,
+			font=ACHIEVEMENTS_FONT_NAME,
+			emoji_mapping=ACHIEVEMENT_EMOJI_MAPPING,
+			last_line_font=ACHIEVEMENTS_FONT_DESC,
 			x=left_x,
 			y=left_y,
 			bg_color=(0, 120, 200, 0),
@@ -426,26 +447,18 @@ async def show_achievements(client,discord_id, user):
 		left_y += spacing
 
 	for achievement_id, name, description in right_achievements:
-		unlocked = achievement_progress[achievement_id]["unlocked"]
-		emoji = achievement_emojis.get(achievement_id, ":x:")
-
-		async with get_db_connection() as db:
-			async with db.cursor(aiomysql.DictCursor) as cursor:
-				await cursor.execute(
-					"SELECT requirement_value FROM achievements WHERE achievement_id=%s",
-					(achievement_id,)
-			)
-			required = (await cursor.fetchone())['requirement_value']
-			progress = achievement_progress[achievement_id]["progress"]
+		emoji = achievement_progress[achievement_id]["emoji"]
+		progress = achievement_progress[achievement_id]["progress"]
+		required = requirements.get(achievement_id, 0)
 
 		text_to_draw = f"{emoji} {name} ({progress}/{required})\n{description}"
 		draw_text_with_rounded_bg(
 			draw=ImageDraw.Draw(background),
 			background=background,
 			text=text_to_draw,
-			font=font1,
-			emoji_mapping=emoji_mapping,
-			last_line_font=font2,
+			font=ACHIEVEMENTS_FONT_NAME,
+			emoji_mapping=ACHIEVEMENT_EMOJI_MAPPING,
+			last_line_font=ACHIEVEMENTS_FONT_DESC,
 			x=right_x,
 			y=right_y,
 			bg_color=(0, 120, 200, 0),
@@ -467,8 +480,8 @@ async def show_achievements(client,discord_id, user):
 	user_name = user.name
 	user_display_mame = user.display_name
 	color = user.color.to_rgb()
-	ImageDraw.Draw(background).text((220, 85),f"{user_display_mame}",(color),font=font3)
-	ImageDraw.Draw(background).text((220, 150),f"{user_name}",(color),font=font4)
+	ImageDraw.Draw(background).text((220, 85),f"{user_display_mame}",(color),font=ACHIEVEMENTS_FONT_TITLE)
+	ImageDraw.Draw(background).text((220, 150),f"{user_name}",(color),font=ACHIEVEMENTS_FONT_USERNAME)
 
 	background.paste(user_image, (100, 100), user_image)
 	background.save("user_achievements.png")
