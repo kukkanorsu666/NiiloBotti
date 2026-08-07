@@ -156,7 +156,7 @@ async def lotto(client, interaction, mention, discord_id, panos):
 			final_clip = clips_array([processed_clips]).with_fps(12)
 			to_close.append(final_clip)
 
-			tmp_path = cache_path + ".tmp"
+			tmp_path = os.path.join(LOTTO_CACHE_DIR, f"{pattern}.tmp.gif")
 			final_clip.write_gif(tmp_path, fps=12, loop=None)
 			os.replace(tmp_path, cache_path)
 		finally:
