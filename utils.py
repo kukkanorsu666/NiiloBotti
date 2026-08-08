@@ -49,8 +49,7 @@ def video():
 
 
 
-def ai_summary():
-	url = daily()
+def ai_summary(url):
 	video_id = extract.video_id(url)
 
 	transcript = YouTubeTranscriptApi().fetch(video_id, languages=['fi'])

@@ -19,32 +19,26 @@ def setup_daily(client):
 		global tracked_message_id
 
 		if scheduled_time_hour  == datetime.datetime.now().hour and scheduled_time_minute == datetime.datetime.now().minute:
-			await give_points_daily(client)
-			channel = client.get_channel(CHANNEL_ID)
-			attempt = 0
-			for x in range(0, 2):
-				try:
-					summary = await asyncio.to_thread(ai_summary)
-					video_url = await asyncio.to_thread(daily)
-					msg = await channel.send("_" + summary + "_" + "\n" + video_url)
-					tracked_message_id = msg.id
-					err = None
+			try:
+				await give_points_daily(client)
+				channel = client.get_channel(CHANNEL_ID)
 
+				video_url = await asyncio.to_thread(daily)
+				if video_url is None:
+					await channel.send("Ei löytynyt tämän päivän videota.")
+					return
+
+				try:
+					summary = await asyncio.to_thread(ai_summary, video_url)
+					msg = await channel.send("_" + summary + "_" + "\n" + video_url)
 				except Exception as e:
 					print(e)
-					if attempt == 1:
-						video_url = await asyncio.to_thread(daily)
-						msg = await channel.send("Napsahti että pärähti! (" + err + ")" + "\n" + video_url)
-						tracked_message_id = msg.id
-						break
-					err = str(e)
-					attempt += 1
-					print(f"#{attempt} - {err}")
-				if err:
-					await sleep(2)
-				else:
-					break
-	
+					msg = await channel.send("Napsahti että pärähti! (" + str(e) + ")" + "\n" + video_url)
+
+				tracked_message_id = msg.id
+			except Exception as e:
+				print(f"daily_loop failed: {e}")
+
 
 	@daily_loop.before_loop
 	async def before_daily_loop():
