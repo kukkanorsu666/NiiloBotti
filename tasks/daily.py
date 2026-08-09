@@ -25,7 +25,7 @@ def setup_daily(client):
 
 				video_url = await asyncio.to_thread(daily)
 				if video_url is None:
-					await channel.send("Ei löytynyt tämän päivän videota.")
+					await channel.send("Videota tänään ei ole eikä tule piste eikä siitä sen")
 					return
 
 				try:
@@ -53,7 +53,7 @@ def setup_daily(client):
 
 		video_url = await asyncio.to_thread(daily)
 		if video_url is None:
-			await channel.send("Ei löytynyt tämän päivän videota.")
+			await channel.send("Videota tänään ei ole eikä tule piste eikä siitä sen")
 			return
 
 		try:
