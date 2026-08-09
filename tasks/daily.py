@@ -46,6 +46,24 @@ def setup_daily(client):
 
 	daily_loop.start()
 
+	#Testikomento: laukaisee päivän videon heti, mutta ei jaa pisteitä eikä anna reagointipisteitä
+	@client.command(name="testing", pass_context=True)
+	async def testing_daily(ctx):
+		channel = client.get_channel(CHANNEL_ID)
+
+		video_url = await asyncio.to_thread(daily)
+		if video_url is None:
+			await channel.send("Ei löytynyt tämän päivän videota.")
+			return
+
+		try:
+			summary = await asyncio.to_thread(ai_summary, video_url)
+			await channel.send("_" + summary + "_" + "\n" + video_url)
+		except Exception as e:
+			print(e)
+			await channel.send("Napsahti että pärähti! (" + str(e) + ")" + "\n" + video_url)
+		# Ei asetuta tracked_message_id:tä, joten reagoinnit tähän viestiin eivät anna pisteitä.
+
 
 
 
