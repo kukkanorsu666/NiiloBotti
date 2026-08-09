@@ -5,5 +5,5 @@ moviepy==2.2.1
 openai==2.8.0
 pytube==15.0.0
 Requests==2.32.5
-scrapetube==2.5.1
+scrapetube @ git+https://github.com/shooter2062424/scrapetube.git@3407ce5ac4a6acc33cd8786ab4f4b30bc23a7a05
 youtube_transcript_api==0.6.2
