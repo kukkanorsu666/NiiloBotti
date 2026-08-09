@@ -1,5 +1,5 @@
 from imports import *
-from config import CHANNEL_ID, SERVER_ID
+from config import CHANNEL_ID
 from db import give_points, give_points_daily
 from utils import ai_summary, daily, check_achievements, get_total_reactions, add_reaction, update_reaction_streak_logic
 from commands.niilokortit import change_boosterpack_amount
@@ -47,15 +47,13 @@ def setup_daily(client):
 	daily_loop.start()
 
 	#Testikomento: laukaisee päivän videon heti, mutta ei jaa pisteitä eikä anna reagointipisteitä
-	@client.slash_command(name="testing", description="Laukaisee päivän videon heti testausta varten", guild_ids=[SERVER_ID])
-	async def testing_daily(interaction: disnake.ApplicationCommandInteraction):
-		await interaction.response.defer(ephemeral=True)
+	@client.command(name="testing", pass_context=True)
+	async def testing_daily(ctx):
 		channel = client.get_channel(CHANNEL_ID)
 
 		video_url = await asyncio.to_thread(daily)
 		if video_url is None:
 			await channel.send("Videota tänään ei ole eikä tule piste eikä siitä sen")
-			await interaction.followup.send("Videota ei löytynyt.", ephemeral=True)
 			return
 
 		try:
@@ -65,7 +63,6 @@ def setup_daily(client):
 			print(e)
 			await channel.send("Napsahti että pärähti! (" + str(e) + ")" + "\n" + video_url)
 		# Ei asetuta tracked_message_id:tä, joten reagoinnit tähän viestiin eivät anna pisteitä.
-		await interaction.followup.send("Testivideo lähetetty.", ephemeral=True)
 
 
 
